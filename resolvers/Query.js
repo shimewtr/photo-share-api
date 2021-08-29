@@ -16,4 +16,6 @@ module.exports = {
     db.collection(`users`)
       .find()
       .toArray(),
+
+  me: (parent, args, { currentUser }) => currentUser,
 }
