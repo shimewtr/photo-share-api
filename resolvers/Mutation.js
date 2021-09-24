@@ -1,21 +1,25 @@
 const { authorizeWithGithub } = require('../lib')
 const fetch = require('node-fetch')
 const { ObjectID } = require('mongodb')
+const { PubSub } = require('graphql-subscriptions')
 
 module.exports = {
-  async postPhoto(parent, args, { db, currentUser }) {
-    if (!currentUser) {
-      throw new Error('only an authorized user can post a photo')
-    }
+  async postPhoto(parent, args, { db, currentUser, pubsub }) {
+    // if (!currentUser) {
+    //   throw new Error('only an authorized user can post a photo')
+    // }
 
     const newPhoto = {
       ...args.input,
-      userID: currentUser.githubLogin,
+      userID: 'shimewtr',
+      // userID: currentUser.githubLogin,
       created: new Date()
     }
 
     const { insertedIds } = await db.collection('photos').insert(newPhoto)
     newPhoto.id = insertedIds[0]
+
+    pubsub.publish('photo-added', { newPhoto })
 
     return newPhoto
   },
@@ -55,7 +59,7 @@ module.exports = {
     return { user, token: access_token }
   },
 
-  addFakeUsers: async (root, { count }, { db }) => {
+  addFakeUsers: async (root, { count }, { db, currentUser, pubsub }) => {
     var randomUserApi = `https://randomuser.me/api/?results=${count}`
     var { results } = await fetch(randomUserApi)
       .then(res => res.json())
@@ -66,6 +70,14 @@ module.exports = {
       githubToken: r.login.sha1
     }))
     await db.collection('users').insert(users)
+
+    var newUsers = await db.collection('users')
+      .find()
+      .sort({ _id: -1 })
+      .limit(count)
+      .toArray()
+
+    newUsers.forEach(newUser => pubsub.publish('user-added', {newUser}))
 
     return users
   },
