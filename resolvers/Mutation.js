@@ -2,22 +2,30 @@ const { authorizeWithGithub } = require('../lib')
 const fetch = require('node-fetch')
 const { ObjectID } = require('mongodb')
 const { PubSub } = require('graphql-subscriptions')
+const { uploadStream } = require('../lib')
+const path = require('path')
 
 module.exports = {
   async postPhoto(parent, args, { db, currentUser, pubsub }) {
-    // if (!currentUser) {
-    //   throw new Error('only an authorized user can post a photo')
-    // }
+    if (!currentUser) {
+      throw new Error('only an authorized user can post a photo')
+    }
 
     const newPhoto = {
       ...args.input,
-      userID: 'shimewtr',
-      // userID: currentUser.githubLogin,
+      userID: currentUser.githubLogin,
       created: new Date()
     }
 
     const { insertedIds } = await db.collection('photos').insert(newPhoto)
     newPhoto.id = insertedIds[0]
+
+
+    var toPath = path.join(__dirname, '..', 'assets', 'photos', `${newPhoto.id}.jpg`)
+
+    const { stream } = await args.input.file
+
+    await uploadStream(stream, toPath)
 
     pubsub.publish('photo-added', { newPhoto })
 

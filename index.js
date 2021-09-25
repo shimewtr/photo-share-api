@@ -5,7 +5,7 @@ const express = require(`express`)
 const expressPlayGround = require(`graphql-playground-middleware-express`).default
 const { readFileSync } = require(`fs`)
 const { createServer } = require('http')
-
+const path = require('path')
 const typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
 const resolvers = require(`./resolvers`)
 
@@ -39,7 +39,10 @@ async function start(){
 
   app.get(`/`, (req, res) => res.end(`welcome`) )
   app.get(`/playground`, expressPlayGround({ endpoint: `/graphql` }) )
-
+  app.use(
+    '/img/photos',
+    express.static(path.join(__dirname, 'assets', 'photos'))
+  )
   const httpServer = createServer(app)
   server.installSubscriptionHandlers(httpServer)
 
