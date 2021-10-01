@@ -45,6 +45,7 @@ async function start(){
   )
   const httpServer = createServer(app)
   server.installSubscriptionHandlers(httpServer)
+  httpServer.timeout = 500
 
   httpServer.listen({ port: 4000 }, () =>
     console.log(`GraphQL Service running on http://localhost:4000${server.graphqlPath}`)
